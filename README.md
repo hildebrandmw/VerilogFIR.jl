@@ -53,6 +53,9 @@ coefficient bitwidth. An analysis is performed on the resulting filter
 coefficients to size the accumulator correctly so it will never overflow. The
 final output is shifted by the scaling amount.
 
+An example usage is shown in `examples/example.jl`. The generated Verilog is
+given in `examples/filter.v`.
+
 # Disclaimer
 The generated filter has been tested and is synthesizeable in Quartus 16.1. I
 make no claims to the synthesizeability for other EDA tools.
