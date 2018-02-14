@@ -1,4 +1,4 @@
-The VerilogFIRGen.jl package is licensed under the MIT "Expat" License:
+The VerilogFIR.jl package is licensed under the MIT "Expat" License:
 
 > Copyright (c) 2018: Mark.
 >
