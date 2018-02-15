@@ -15,13 +15,18 @@ nbits_s(x) = x > 0 ? clog2(x+1)+1 : clog2(-x)+1
 
 tab(n) = " "^(4n)
 
+macro makedict(args...)
+    return esc(:(Dict($([:($(QuoteNode(i)) => $i) for i in args]...))))
+end
 
 ################################################################################
 # Top level function
 ################################################################################
-function generate_fir(file::String, coeffs; kwargs...)
+generate_fir(args...; kwargs...) = generate_fir(STDOUT, args...; kwargs...)
+
+function generate_fir(file::String, args...; kwargs...)
     io = open(file, "w")
-    generate_fir(io, coeffs; kwargs...)
+    generate_fir(io, args...; kwargs...)
     close(io)
 end
 
@@ -33,14 +38,16 @@ function generate_fir(io::IO, coeffs; w_input = 8, w_output = 8, w_coeff = 8)
     taps  = length(scaled_coeffs)
     w_acc = acc_width(scaled_coeffs, w_input)
 
+    d = @makedict w_input w_output w_coeff scaled_coeffs bitshift taps w_acc
+
     # Generate Verilog header
-    header(io, w_input, w_output)
-    declarations(io, w_input, w_coeff, w_acc, taps)
-    initialize(io, scaled_coeffs, w_coeff)
-    register_input(io, taps)
-    gen_filter(io, taps)
-    output(io, w_output, bitshift)
-    endmodule(io)
+    header(io, d)
+    declarations(io, d)
+    initialize(io, d)
+    register_input(io, d)
+    gen_filter(io, d)
+    output(io, d)
+    endmodule(io, d)
 end
 
 @doc """
@@ -98,7 +105,7 @@ end
 ################################################################################
 # Printing functions
 ################################################################################
-function header(io, w_input, w_output)
+function header(io, d)
     print(io,"""
         module filter(
                 // Interface signals
@@ -106,21 +113,21 @@ function header(io, w_input, w_output)
                 input start,
                 output reg done,
                 // Data Signals
-                input  [$(w_input-1):0] data_in,
-                output reg [$(w_output-1):0] data_out
+                input  [$(d[:w_input]-1):0] data_in,
+                output reg [$(d[:w_output]-1):0] data_out
             );
         """)
 end
 
-function declarations(io, w_input, w_coeff, w_acc, taps)
+function declarations(io, d)
     print(io,"""
             // Coefficient Storage
-            reg signed [$(w_coeff-1):0] coeff [$(taps-1):0];
-            reg signed [$(w_input-1):0] data  [$(taps-1):0];
+            reg signed [$(d[:w_coeff]-1):0] coeff [$(d[:taps]-1):0];
+            reg signed [$(d[:w_input]-1):0] data  [$(d[:taps]-1):0];
             // Counter for iterating through coefficients.
-            reg [$(clog2(taps)-1):0] count;
+            reg [$(clog2(d[:taps])-1):0] count;
             // Accumulator
-            reg signed [$(w_acc-1):0] acc;
+            reg signed [$(d[:w_acc]-1):0] acc;
 
             // State machine signals
             localparam IDLE = 0;
@@ -130,23 +137,23 @@ function declarations(io, w_input, w_coeff, w_acc, taps)
         """)
 end
 
-function initialize(io, coeff, w_coeff)
+function initialize(io, d)
     # Print initial statement
     print(io, "\n")
     print(io, tab(1), "initial begin\n")
-    for (i,c) in enumerate(coeff)
+    for (i,c) in enumerate(d[:scaled_coeffs])
         print(io, tab(2), "coeff[$(i-1)] = $c;\n")
     end
     # end initial block
     print(io, tab(1), "end\n")
 end
 
-function register_input(io, taps)
+function register_input(io, d)
     print(io, """
             always @(posedge clk) begin : capture
                 integer i;
                 if (start) begin
-                    for (i = 0; i < $(taps-1) ; i = i+1) begin
+                for (i = 0; i < $(d[:taps]-1) ; i = i+1) begin
                         data[i+1] <= data[i];
                     end
                     data[0] <= data_in;
@@ -155,14 +162,14 @@ function register_input(io, taps)
         """)
 end
 
-function gen_filter(io, taps)
+function gen_filter(io, d)
     print(io, """
             always @(posedge clk) begin
                 case (state)
                     IDLE: begin
                         done <= 1'b0;
                         if (start) begin
-                            count <= $(taps-1);
+                            count <= $(d[:taps]-1);
                             acc   <= 0;
                             state <= RUN;
                         end
@@ -181,18 +188,39 @@ function gen_filter(io, taps)
         """)
 end
 
-function output(io, w_output, bitshift)
-    print(io, """
-            always @(posedge clk) begin
-                if (done) begin
-                    data_out <= acc[$(bitshift + w_output - 1):$(bitshift)];
+function output(io, d)
+    output_left = d[:bitshift] + d[:w_output] - 1
+    # Determine if saturation detection is needed for the output
+    saturate = output_left < d[:w_acc] - 1
+
+    if saturate
+        print(io, """
+                always @(posedge clk) begin
+                    if (done) begin
+                        // Saturate if necessary
+                        if (acc >= \$signed(2 ** $(output_left-1))) begin
+                            data_out <= $(maxrep(d[:w_output]));
+                        end else if (acc < \$signed(-1 * $(output_left-1))) begin
+                            data_out <= $(minrep(d[:w_output]));
+                        end else begin
+                            data_out <= acc[$output_left:$(d[:bitshift])];
+                        end
+                    end
                 end
-            end
-        """)
+            """)
+    else
+        print(io, """
+                always @(posedge clk) begin
+                    if (done) begin
+                        data_out <= acc[$output_left:$(d[:bitshift])];
+                    end
+                end
+            """)
+    end
 end
 
 
-function endmodule(io)
+function endmodule(io, d)
     print(io, "endmodule")
 end
 end # module

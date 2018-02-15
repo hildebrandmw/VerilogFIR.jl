@@ -57,6 +57,23 @@ using Base.Test
         @test VerilogFIR.tab(1) == "    "
         @test VerilogFIR.tab(2) == "        "
     end
+    # makedict
+    let
+        a = 1
+        b = [10,20,30]
+        c = "hello"
+        d = 5
+        f = 2.21
+        dict = VerilogFIR.@makedict a b c d f
+        expected = Dict(
+            :a => 1,
+            :b => [10,20,30],
+            :c => "hello",
+            :d => 5,
+            :f => 2.21,
+        )
+        @test dict == expected
+    end
 end
 
 #=
@@ -122,6 +139,9 @@ end
     generate_fir(STDOUT, ones(4)/4, w_input = 16, w_output = 16, w_coeff = 12)
     generate_fir(STDOUT, ones(4)/4, w_input = 8,  w_output = 8, w_coeff = 21)
     generate_fir(STDOUT, ones(4)/4, w_input = 16, w_output = 8, w_coeff = 9)
+    # Test generating saturating logic
+    generate_fir(ones(8))
+
     @test_throws InexactError generate_fir(STDOUT, ones(4)/4, w_coeff = 1)
     # Test with file
     file = "test15713209.v"
