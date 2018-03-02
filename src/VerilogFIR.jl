@@ -30,7 +30,11 @@ function generate_fir(file::String, args...; kwargs...)
     close(io)
 end
 
-function generate_fir(io::IO, coeffs; w_input = 8, w_output = 8, w_coeff = 8)
+function generate_fir(io::IO, coeffs; 
+                      w_input   = 8, 
+                      w_output  = 8, 
+                      w_coeff   = 8,)
+
     # Scale coefficients
     scaled_coeffs, bitshift = scale_coefficients(coeffs, w_coeff)
 
@@ -59,9 +63,9 @@ an `IO`, output will be written directly to `io`. Otherwise, if `io` is a
 written to that file.
 
 # Key word arguments
-* `w_input` - Bitwidth of the input. Default: `8`.
+* `w_input`  - Bitwidth of the input. Default: `8`.
 * `w_output` - Bitwidth of the output. Default: `8`.
-* `w_coeff` - Bitwidth of the coefficients. Default: `8`.
+* `w_coeff`  - Bitwidth of the coefficients. Default: `8`.
 """ generate_fir
 
 ################################################################################
@@ -198,9 +202,9 @@ function output(io, d)
                 always @(posedge clk) begin
                     if (done) begin
                         // Saturate if necessary
-                        if (acc >= \$signed(2 ** $(output_left-1))) begin
+                        if (acc >= 2 ** $(output_left)) begin
                             data_out <= $(maxrep(d[:w_output]));
-                        end else if (acc < \$signed(-1 * $(output_left-1))) begin
+                        end else if (acc < -(2 ** $(output_left))) begin
                             data_out <= $(minrep(d[:w_output]));
                         end else begin
                             data_out <= acc[$output_left:$(d[:bitshift])];
