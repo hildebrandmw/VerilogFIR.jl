@@ -55,12 +55,3 @@ final output is shifted by the scaling amount.
 
 An example usage is shown in `examples/example.jl`. The generated Verilog is
 given in `examples/filter.v`.
-
-# Disclaimer
-The generated filter has been tested and is synthesizeable in Quartus 16.1. I
-make no claims to the synthesizeability for other EDA tools.
-
-The Verilog generated is not completely precise with its constant literal sizing
-and casting. This may generate some warnings during synthesis. At some point,
-it might be nice for clean this up, but for now I am relying on the synthesis
-tools to do the right thing.
