@@ -22,7 +22,7 @@ end
 ################################################################################
 # Top level function
 ################################################################################
-generate_fir(args...; kwargs...) = generate_fir(STDOUT, args...; kwargs...)
+generate_fir(args...; kwargs...) = generate_fir(stdout, args...; kwargs...)
 
 function generate_fir(file::String, args...; kwargs...)
     io = open(file, "w")
