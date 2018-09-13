@@ -30,10 +30,12 @@ function generate_fir(file::String, args...; kwargs...)
     close(io)
 end
 
-function generate_fir(io::IO, coeffs; 
-                      w_input   = 8, 
-                      w_output  = 8, 
-                      w_coeff   = 8,)
+function generate_fir(
+        io::IO, coeffs; 
+        w_input   = 8, 
+        w_output  = 8, 
+        w_coeff   = 8,
+    )
 
     # Scale coefficients
     scaled_coeffs, bitshift = scale_coefficients(coeffs, w_coeff)

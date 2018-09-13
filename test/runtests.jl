@@ -1,5 +1,5 @@
 using VerilogFIR
-using Base.Test
+using Test
 
 @testset "Testing Auxiliary Functions" begin
     # maxrep
@@ -136,13 +136,13 @@ Tests for functions that scale coefficients.
 end
 
 @testset "Testing complete run" begin
-    generate_fir(STDOUT, ones(4)/4, w_input = 16, w_output = 16, w_coeff = 12)
-    generate_fir(STDOUT, ones(4)/4, w_input = 8,  w_output = 8, w_coeff = 21)
-    generate_fir(STDOUT, ones(4)/4, w_input = 16, w_output = 8, w_coeff = 9)
+    generate_fir(stdout, ones(4)/4, w_input = 16, w_output = 16, w_coeff = 12)
+    generate_fir(stdout, ones(4)/4, w_input = 8,  w_output = 8, w_coeff = 21)
+    generate_fir(stdout, ones(4)/4, w_input = 16, w_output = 8, w_coeff = 9)
     # Test generating saturating logic
     generate_fir(ones(8))
 
-    @test_throws InexactError generate_fir(STDOUT, ones(4)/4, w_coeff = 1)
+    @test_throws InexactError generate_fir(stdout, ones(4)/4, w_coeff = 1)
     # Test with file
     file = "test15713209.v"
     generate_fir(file, ones(4)/4)
